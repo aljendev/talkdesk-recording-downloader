@@ -18,7 +18,7 @@ async function getTalkdeskToken() {
   const accountName = process.env.TALKDESK_ACCOUNT_NAME;
   if (!accountName) throw new Error("TALKDESK_ACCOUNT_NAME environment variable is not set");
 
-  const authUrl = `https://${accountName}.mytalkdesk.com/oauth/token`;
+  const authUrl = `https://${accountName}.talkdeskid.com/oauth/token`;
   console.log(`[STEP 1] Getting token from: ${authUrl}`);
 
   const response = await axios.post(
