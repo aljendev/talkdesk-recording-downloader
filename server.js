@@ -17,10 +17,12 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
 // ─── OAuth Token Helper ───────────────────────────────────────────────────────
 async function getTalkdeskToken() {
   const accountName = process.env.TALKDESK_ACCOUNT_NAME;
-  const authUrl = accountName
-    ? `https://${accountName}.mytalkdesk.com/oauth/token`
-    : `https://auth.talkdesk.com/oauth/token`;
 
+  if (!accountName) {
+    throw new Error("TALKDESK_ACCOUNT_NAME environment variable is not set");
+  }
+
+  const authUrl = `https://${accountName}.mytalkdesk.com/oauth/token`;
   console.log(`[INFO] Using auth URL: ${authUrl}`);
 
   const response = await axios.post(
