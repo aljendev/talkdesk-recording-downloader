@@ -18,7 +18,7 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
 async function getTalkdeskToken() {
   const accountName = process.env.TALKDESK_ACCOUNT_NAME;
   const authUrl = accountName
-    ? `https://${accountName}.talkdesk.com/oauth/token`
+    ? `https://${accountName}.mytalkdesk.com/oauth/token`
     : `https://auth.talkdesk.com/oauth/token`;
 
   console.log(`[INFO] Using auth URL: ${authUrl}`);
@@ -54,7 +54,7 @@ app.post("/download-recording", async (req, res) => {
     console.log(`[INFO] Fetching token for interaction: ${interaction_id}`);
     const token = await getTalkdeskToken();
 
-    const recordingUrl = `https://api.talkdesk.com/recordings/${interaction_id}/media`;
+    const recordingUrl = `https://api.talkdeskapp.com/recordings/${interaction_id}/media`;
     console.log(`[INFO] Downloading from: ${recordingUrl}`);
 
     const recordingResponse = await axios.get(recordingUrl, {
