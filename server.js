@@ -53,46 +53,78 @@ app.post("/download-recording", async (req, res) => {
   }
 
   try {
+    // Step 1: Get OAuth token
     console.log(`[INFO] Fetching token for interaction: ${interaction_id}`);
     const token = await getTalkdeskToken();
 
-    const recordingUrl = `https://api.talkdeskapp.com/recordings/${interaction_id}/media`;
-    console.log(`[INFO] Downloading from: ${recordingUrl}`);
+    // Step 2: Get list of recordings for this call
+    const callRecordingsUrl = `https://api.talkdeskapp.com/calls/${interaction_id}/recordings`;
+    console.log(`[INFO] Fetching recordings list from: ${callRecordingsUrl}`);
 
-    const recordingResponse = await axios.get(recordingUrl, {
+    const recordingsListResponse = await axios.get(callRecordingsUrl, {
       headers: { Authorization: `Bearer ${token}` },
-      responseType: "stream",
     });
 
-    // Determine file extension from content-type
-    const contentType = recordingResponse.headers["content-type"] || "";
-    const ext = contentType.includes("mp3")
-      ? "mp3"
-      : contentType.includes("wav")
-      ? "wav"
-      : contentType.includes("ogg")
-      ? "ogg"
-      : "mp3"; // default fallback
+    const recordings = recordingsListResponse.data?._embedded?.recordings;
 
-    const filename = `${interaction_id}_${Date.now()}.${ext}`;
-    const filePath = path.join(DOWNLOADS_DIR, filename);
+    if (!recordings || recordings.length === 0) {
+      return res.status(404).json({ error: "No recordings found for this interaction_id" });
+    }
 
-    const writer = fs.createWriteStream(filePath);
-    recordingResponse.data.pipe(writer);
+    console.log(`[INFO] Found ${recordings.length} recording(s)`);
 
-    await new Promise((resolve, reject) => {
-      writer.on("finish", resolve);
-      writer.on("error", reject);
-    });
+    // Step 3: Download all recordings using media href
+    const downloadedFiles = [];
 
-    console.log(`[SUCCESS] Saved to: ${filePath}`);
+    for (const recording of recordings) {
+      const mediaUrl = recording._links?.media?.href;
+      const recordingId = recording.id;
+
+      if (!mediaUrl) {
+        console.warn(`[WARN] No media href for recording ${recordingId}, skipping`);
+        continue;
+      }
+
+      console.log(`[INFO] Downloading recording ${recordingId} from: ${mediaUrl}`);
+
+      const mediaResponse = await axios.get(mediaUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "stream",
+      });
+
+      // Determine file extension from content-type
+      const contentType = mediaResponse.headers["content-type"] || "";
+      const ext = contentType.includes("mp3")
+        ? "mp3"
+        : contentType.includes("wav")
+        ? "wav"
+        : contentType.includes("ogg")
+        ? "ogg"
+        : "mp3"; // default fallback
+
+      const filename = `${interaction_id}_${recordingId}.${ext}`;
+      const filePath = path.join(DOWNLOADS_DIR, filename);
+
+      const writer = fs.createWriteStream(filePath);
+      mediaResponse.data.pipe(writer);
+
+      await new Promise((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+
+      console.log(`[SUCCESS] Saved: ${filename}`);
+      downloadedFiles.push({ recording_id: recordingId, filename, path: filePath });
+    }
+
     res.json({
       success: true,
       interaction_id,
-      filename,
-      path: filePath,
-      message: "Recording downloaded successfully",
+      recordings_found: recordings.length,
+      downloaded: downloadedFiles,
+      message: `${downloadedFiles.length} recording(s) downloaded successfully`,
     });
+
   } catch (err) {
     const status = err.response?.status || 500;
     const message = err.response?.data || err.message;
