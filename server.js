@@ -8,7 +8,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 const DOWNLOADS_DIR = path.join(__dirname, "downloads");
-const DELAY_MS = 5 * 60 * 1000; // 5 minutes
+const DELAY_MS = 30 * 1000; // 30 seconds
 
 if (!fs.existsSync(DOWNLOADS_DIR)) {
   fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
@@ -39,11 +39,11 @@ async function getTalkdeskToken() {
 // ─── Background Job: wait 5 min, then fetch & download ───────────────────────
 async function processRecording(interaction_id) {
   console.log(`[JOB] Received interaction_id: ${interaction_id}`);
-  console.log(`[JOB] Waiting 5 minutes before fetching recording...`);
+  console.log(`[JOB] Waiting 30 seconds before fetching recording...`);
 
   await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
 
-  console.log(`[JOB] 5 minutes passed. Fetching recording for: ${interaction_id}`);
+  console.log(`[JOB] 30 seconds passed. Fetching recording for: ${interaction_id}`);
 
   try {
     // Step 1: Get token
@@ -150,7 +150,7 @@ app.post("/download-recording", (req, res) => {
   res.json({
     success: true,
     interaction_id,
-    message: "Request received. Will wait 5 minutes then fetch and download recording immediately.",
+    message: "Request received. Will wait 30 seconds then fetch and download recording immediately.",
     scheduled_at: scheduledAt.toISOString(),
     fetch_at: downloadAt.toISOString(),
   });
